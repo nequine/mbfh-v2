@@ -13,12 +13,12 @@ At the time I started to work on this fork, there were also multiple issues that
 
 **Installation instructions :**
 
-Once you downloaded and unzipped the plugin, you need to specify to houdini where to find the plugin. 
-Go to your houdini packages folder location, the path should looks like something like that :
+Once you downloaded and unzipped the plugin, you need to specify to houdini where to find it. 
+Go to your houdini packages folder location, you should be able to find here :
 
 `"C:\Users\YOUR USER NAME\Documents\houdiniXX.X\packages"`
 
-If you already installed the megascans bridge plugin for houdini, you should already find a MegascanPlugin.json, you can open it and modify the path to point where mbfh-v2 is located, for exemple :
+If you already installed the megascan bridge plugin for houdini, you should already find a MegascanPlugin.json, you can open it and modify the path to point where mbfh-v2 is located, for exemple :
 
 `"E:\\git\\mbfh-v2\\MSLiveLink"`
 
