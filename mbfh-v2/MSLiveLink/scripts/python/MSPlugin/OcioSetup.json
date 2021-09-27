@@ -1,8 +1,0 @@
-{ "OCIO" : 
-    {"default" : {"texture" : "sRGB", "texture_lin" : "linear", "texture_raw" : "auto"},
-    "RED" : {"texture" : "texture - srgb", "texture_lin" : "texture - linear srgb", "texture_raw" : "texture - data"}, 
-    "aces1.2" : {"texture" : "srgb_texture", "texture_lin" : "linear", "texture_raw" : "data"},
-    "Renderman" : {"texture" : "srgb_texture", "texture_lin" : "srgb_linear", "texture_raw" : "data"},
-    "aces - lite - tcam" : {"texture" : "texture - srgb", "texture_lin" : "texture - linear srgb", "texture_raw" : "texture - data"}
-    } 
-}
