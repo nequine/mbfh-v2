@@ -6,9 +6,10 @@ from ..Utilities.AssetData import *
 
 import hou
 
-from six import with_metaclass
 
-class RedshiftMaterialFactory(with_metaclass(Singleton)):
+
+class RedshiftMaterialFactory:
+    __metaclass__ = Singleton
     def __init_(self):
         pass
     
@@ -151,7 +152,8 @@ class RedshiftMaterialFactory(with_metaclass(Singleton)):
         return materialNode
 
 
-class RedshiftTriplanarFactory(with_metaclass(Singleton)):
+class RedshiftTriplanarFactory:
+    __metaclass__ = Singleton
     def __init__(self):
         pass
 

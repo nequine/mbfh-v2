@@ -10,11 +10,10 @@ from ..Utilities.USDVariant import *
 import hou
 import os
 import _alembic_hom_extensions as abc
-from six import with_metaclass
 
 
-
-class ImportUSD(with_metaclass(Singleton)):
+class ImportUSD:
+    __metaclass__ = Singleton
 
     def __init__(self):
         pass
@@ -101,8 +100,7 @@ class ImportUSD(with_metaclass(Singleton)):
 
         outputNode = variantSet.createOutputNode("null", importParams["assetName"])
         outputNode.setDisplayFlag(True)
-        #hou.node(importParams["usdAssetPath"]).layoutChildren()
-        hou.node(importParams["usdAssetPath"]).moveToGoodPosition()
+        hou.node(importParams["usdAssetPath"]).layoutChildren()
         
     def scatterAlembicSetup(self, assetData, importOptions, importParams):
         variantPaths = []
@@ -237,7 +235,7 @@ class ImportUSD(with_metaclass(Singleton)):
 
 
         outputNode = assignMaterial.createOutputNode("null", importParams["assetName"])
-        hou.node(importParams["usdAssetPath"]).moveToGoodPosition()
+        hou.node(importParams["usdAssetPath"]).layoutChildren()
         outputNode.setDisplayFlag(True)
 
         return outputNode
@@ -335,7 +333,8 @@ class ImportUSD(with_metaclass(Singleton)):
 
 
 
-class Import3DAsset(with_metaclass(Singleton)):
+class Import3DAsset:
+    __metaclass__ = Singleton  
     def __init__(self):
         pass
 
@@ -352,7 +351,7 @@ class Import3DAsset(with_metaclass(Singleton)):
                 if importOptions["UI"]["ImportOptions"]["UseScattering"]:
                     MegascansScatter().createScatter(assetPaths,None, importParams["assetPath"], importOptions)
 
-                hou.node(importParams["assetPath"]).moveToGoodPosition()
+                hou.node(importParams["assetPath"]).layoutChildren()
 
         else :
             if importOptions["UI"]["ImportOptions"]["EnableUSD"]:
@@ -364,13 +363,13 @@ class Import3DAsset(with_metaclass(Singleton)):
                 if importOptions["UI"]["ImportOptions"]["UseScattering"]:
                     MegascansScatter().createScatter(assetPaths,None, importParams["assetPath"], importOptions)
         
-                hou.node(importParams["assetPath"]).moveToGoodPosition()
+                hou.node(importParams["assetPath"]).layoutChildren()
             # /obj/Megascans/3D_Assets/Old_Rusty_Cap_tjxmcjujw
 
 
 
     def subType(self, assetData):
-        if "scatter" in assetData["tags"] or "scatter" in assetData["categories"] or  "cmb_asset" in assetData["tags"] or "cmb_asset" in assetData["categories"]: return "Scatter"
+        if "scatter" in assetData["tags"] or "scatter" in assetData["categories"] : return "Scatter"
         else : return "Normal"
 
     def importNormal3D(self, assetData, importOptions, importParams):
@@ -386,7 +385,7 @@ class Import3DAsset(with_metaclass(Singleton)):
         if assetMaterial is not None: assetMaterialPath = assetMaterial.path()
         meshSourcePath = assetData["meshList"][0]["path"]
         outputName = importParams["assetName"] + "_" + assetData["activeLOD"]
-        exportedLod = self.createGeometrySetup(meshSourcePath,assetMaterialPath, geometryContainer.path(), outputName)
+        exportedLod = self.createGeometrySetup(meshSourcePath,assetMaterialPath, geometryContainer.path(), importOptions, outputName)
         assetLodsOutput.append(exportedLod)
 
         if importOptions["UI"]["ImportOptions"]["EnableLods"] :
@@ -400,7 +399,7 @@ class Import3DAsset(with_metaclass(Singleton)):
                 # need a better condition when lods are 10
                 if lodData["lod"] > assetData["activeLOD"] :
                     lodOutputName = importParams["assetName"] + "_" + lodData["lod"]
-                    importedLod = self.createGeometrySetup(lodData["path"], assetMaterialPath, geometryContainer.path(), lodOutputName)
+                    importedLod = self.createGeometrySetup(lodData["path"], assetMaterialPath, geometryContainer.path(), importOptions, lodOutputName)
                     assetLodsOutput.append(importedLod)
 
             if len(assetLodsOutput) > 1:
@@ -420,16 +419,19 @@ class Import3DAsset(with_metaclass(Singleton)):
         elif importOptions["UI"]["ImportOptions"]["Renderer"] == "Arnold":
             geometryContainer.parm("ar_disp_height").set(0.008)
 
-        geometryContainer.moveToGoodPosition()
+        elif importOptions["UI"]["ImportOptions"]["Renderer"] == "3Delight":
+            geometryContainer.parm("shop_materialpath").set(assetMaterialPath)
+        
+
+        geometryContainer.layoutChildren()
         geometryContainer.setSelected(True)
         
 
         return assetLodsOutput
 
             
-    def createGeometrySetup(self, meshSourcePath, materialPath, targetPath, outputName= "Out"):
+    def createGeometrySetup(self, meshSourcePath, materialPath, targetPath, importOptions, outputName= "Out"):
         uniformScale = 0.01
-        # uniformScale = 1
         fileextension = os.path.splitext(meshSourcePath)[1]
         
         if fileextension == ".abc":
@@ -445,9 +447,15 @@ class Import3DAsset(with_metaclass(Singleton)):
         if fileextension == ".fbx":
             attribDelete = transformNode.createOutputNode("attribdelete")
             attribDelete.parm("ptdel").set("fbx_*")
+        
+        if importOptions["UI"]["ImportOptions"]["Renderer"] == "3delight":
+            materialNode = transformNode
+            print("3delight ftw")
+        else :
+            materialNode = attribDelete.createOutputNode("material")
+            materialNode.parm("shop_materialpath1").set(materialPath)
+            print("use 3delight!")
 
-        materialNode = attribDelete.createOutputNode("material")
-        materialNode.parm("shop_materialpath1").set(materialPath)
         outputNullNode = materialNode.createOutputNode("null", outputName)
         
         # fileImportNode.setRenderFlag(False)
@@ -467,7 +475,7 @@ class Import3DAsset(with_metaclass(Singleton)):
         if assetMaterial is not None: assetMaterialPath = assetMaterial.path()
         
         meshSourcePath = assetData["meshList"][0]["path"]
-        exportedLod = self.createGeometrySetup(meshSourcePath,assetMaterialPath, activeLodGeo.path(), assetData["activeLOD"])
+        exportedLod = self.createGeometrySetup(meshSourcePath, assetMaterialPath, activeLodGeo.path(), importOptions, assetData["activeLOD"])
         assetLodsOutput.append(exportedLod)
 
         if importOptions["UI"]["ImportOptions"]["EnableLods"]:
@@ -478,7 +486,7 @@ class Import3DAsset(with_metaclass(Singleton)):
                 # need a better condition when lods are 10
                 if lodData["lod"] > assetData["activeLOD"] :
                     lodContainer = hou.node(importParams["assetPath"]).createNode("geo", lodData["lod"])
-                    importedLod = self.createGeometrySetup(lodData["path"], assetMaterialPath, lodContainer.path(), lodData["lod"])
+                    importedLod = self.createGeometrySetup(lodData["path"], assetMaterialPath, lodContainer.path(), importOptions, lodData["lod"])
                     assetLodsOutput.append(importedLod)
                     if importOptions["UI"]["ImportOptions"]["Renderer"] == "Redshift":
                         lodContainer.parm("RS_objprop_displace_enable").set(1)            
@@ -486,6 +494,9 @@ class Import3DAsset(with_metaclass(Singleton)):
 
                     elif importOptions["UI"]["ImportOptions"]["Renderer"] == "Arnold":
                         lodContainer.parm("ar_disp_height").set(0.008)
+
+                    elif importOptions["UI"]["ImportOptions"]["Renderer"] == "3Delight":
+                        lodContainer.parm("shop_materialpath").set(assetMaterialPath)
                    
         allScatter = {}
         for assetLod in assetLodsOutput:
@@ -493,21 +504,17 @@ class Import3DAsset(with_metaclass(Singleton)):
             if assetData["meshList"][0]["name"].split(".")[-1] == "abc":
                 scatterGroups = list(assetLod.geometry().findPrimAttrib("path").strings())                
                 groupPrefix = "@path="
-                
-
             elif assetData["meshList"][0]["name"].split(".")[-1] == "obj":
                 allScatter[assetLod.name()] = []
                 scatterGroups = [g.name() for g in assetLod.geometry().primGroups()]
                 groupPrefix = ""
-
-
-
             else:                
                 assetGeometry = assetLod.geometry()
                 primitveAttribs = assetGeometry.primAttribs()
                 nameAttrib = [attrib for attrib in primitveAttribs if attrib.name()=="name"][0]
                 scatterGroups = nameAttrib.strings()
                 groupPrefix = "@name="
+
 
             for scatterGroup in scatterGroups:
                 blastGroup = assetLod.createOutputNode("blast")

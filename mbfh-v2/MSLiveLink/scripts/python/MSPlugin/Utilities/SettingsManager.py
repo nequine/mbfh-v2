@@ -1,12 +1,13 @@
 
-from .SingletonBase import Singleton
+from SingletonBase import Singleton
 import os
 import json
 
-from six import with_metaclass
 
 
-class SettingsManager(with_metaclass(Singleton)):
+
+class SettingsManager:
+    __metaclass__ = Singleton
 
     def __init_(self):
         pass        
@@ -39,7 +40,7 @@ class SettingsManager(with_metaclass(Singleton)):
 
     def createDefaultSettings(self, settingsFilePath):
         try:
-            defaultSettings = { "UI" : { "ImportOptions" : { "Renderer" : "Mantra", "Material" : "Principled Shader", "UseScattering" : False, "UseExrDisplacement" : False, "UseAtlasSplitter" : False, "EnableLods" : False, "ApplyMotion" : False, "EnableUSD" : False , "ConvertToRAT" : True}, "USDOptions" : { "USDMaterial" : "Karma", "3DrefPath" : "/Megascans/_3D_Assets/", "3DPlantRefPath" : "/Megascans/_3D_Plants/", "SurfaceRefPath" : "/Megascans/Surfaces", "ImportLods" : False } }, "Misc" : { } }
+            defaultSettings = { "UI" : { "ImportOptions" : { "Renderer" : "Mantra", "Material" : "Principled Shader", "OCIO" : "default", "UseScattering" : False, "UseExrDisplacement" : False, "UseAtlasSplitter" : False, "EnableLods" : False, "ApplyMotion" : False, "EnableUSD" : False , "ConvertToRAT" : True}, "USDOptions" : { "USDMaterial" : "Karma", "3DrefPath" : "/Megascans/_3D_Assets/", "3DPlantRefPath" : "/Megascans/_3D_Plants/", "SurfaceRefPath" : "/Megascans/Surfaces", "ImportLods" : False } }, "Misc" : { } }
             with open(settingsFilePath, 'w') as outfile:
                 json.dump(defaultSettings, outfile)
             return defaultSettings    
@@ -77,9 +78,37 @@ class SettingsManager(with_metaclass(Singleton)):
 
 
 
-    def getEnvironmentPath(self):
-            
+    def getOcioSetupPath(self):
+        ociosettingsPath = self.getOcioSettingsPath()
+        if ociosettingsPath == None:
+            ociosettingsFilename = "OcioSetup.json"
+            ociosettingsPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))           
+           
+            if os.access(ociosettingsPath, os.W_OK):
+                ociosettingsFilePath = os.path.join(ociosettingsPath, ociosettingsFilename)
+                if os.path.isfile(ociosettingsFilePath):                    
+                    if not os.access(ociosettingsFilePath, os.W_OK):                   
+                        return None
+                    else:
+                        return ociosettingsFilePath
 
+                else :
+                    try:
+                        settingsFile = open(ociosettingsFilePath, "w+")
+                        settingsFile.close()
+                        return ociosettingsFilePath
+                    except Exception as e:
+                        return None
+                
+            else :
+                return None
+        else :
+            return ociosettingsPath
+
+
+
+    def getEnvironmentPath(self):
+        
         fileName = "Settings.json"
         savePath = os.getenv("MS_HOUDINI_PATH")
         
@@ -95,12 +124,13 @@ class SettingsManager(with_metaclass(Singleton)):
                         return None
                     else :
                         return settingsPath
+
                 try:
                     settingsFile = open(settingsPath, "w+")
                     settingsFile.close()
                     return settingsPath
                 except Exception as e:
-                    return None                
+                    return None              
 
             else:
 
@@ -114,6 +144,65 @@ class SettingsManager(with_metaclass(Singleton)):
 
         return None
 
+
+
+    def getOcioSettingsPath(self):
+            
+            ocioFileName = "OcioSetup.json"
+            savePath = os.getenv("MS_HOUDINI_PATH")
+        
+            if savePath != None :            
+                ociosettingsPath =  os.path.join(savePath, ocioFileName)
+                if os.path.exists(savePath):
+                
+                    if os.access(savePath, os.W_OK) == False :
+                        return None
+
+
+                if os.path.isfile(ociosettingsPath):
+                    if os.access(ociosettingsPath, os.W_OK) == False:
+                        return None
+                    else :
+                        return ociosettingsPath
+
+                    try:
+                        ociosettingsFile = open(ociosettingsPath, "w+")
+                        ociosettingsFile.close()
+                        return ociosettingsPath
+                    except Exception as e:
+                        return None                   
+
+                else:
+
+                    try:                    
+                        os.makedirs(savePath)
+                        ociosettingsFile = open(ociosettingsPath, "w+")
+                        ociosettingsFile.close()
+                        return ociosettingsPath
+                    except Exception as e:
+                        return None
+
+            return None
+
+    def getOcioSetup(self) :
+        self.ocioSetupPath = self.getOcioSetupPath()
+        try:
+            with open(self.ocioSetupPath, 'r') as fl_:
+                ocioSetup =  json.load(fl_)
+                # if self.checkOcioSetupValidity(getOcioSetup):
+                #     return ocioSetup
+                # else:
+                #     print('no OCIO!')
+                #     ocioSetup = self.createDefaultSettings(self.ocioSetupPath)
+                #     self.saveSettings(ocioSetup)
+                #     return ocioSetup
+                return ocioSetup
+
+
+        except Exception as e:
+            print("Error reading json file")
+            # ocioSetup = self.createDefaultOcioSetup(self.ocioSetupPath)
+            # return ocioSetup
 
         
 
@@ -144,3 +233,10 @@ class SettingsManager(with_metaclass(Singleton)):
             if "ImportOptions" in settings["UI"].keys():                           
                 return True
         return False
+
+    def checkOcioSetupValidity(self, ocioSetup):
+        # needs to be pythonic and complete
+        if "OCIO" in ocioSetup.keys():                           
+            return True
+        else :
+            return False

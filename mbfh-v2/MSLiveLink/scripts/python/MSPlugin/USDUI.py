@@ -22,6 +22,7 @@ class USDOptions(QtWidgets.QWidget):
         # Main UI Layout
         self.uiLayout = QtWidgets.QGridLayout()
         self.uiBox.setLayout(self.uiLayout)
+        self.uiBox.setContentsMargins(1,1,1,1)
         
 
         # Material type

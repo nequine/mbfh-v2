@@ -1,7 +1,7 @@
 from PySide2.QtCore import QThread, Signal
 import time, socket
 
-from .MSImporter import MSImporter
+from MSImporter import MSImporter
 
 
 class QLiveLinkMonitor(QThread):
@@ -49,7 +49,7 @@ class QLiveLinkMonitor(QThread):
                         else : break
 
                     time.sleep(0.05)
-                    self.Bridge_Call.emit(self.TotalData.decode('ascii'))
+                    self.Bridge_Call.emit(self.TotalData)
                     time.sleep(0.05)
                     # break
         except:

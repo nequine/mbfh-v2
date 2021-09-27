@@ -1,9 +1,6 @@
 import hou
 import re
 import os
-import requests
-import json
-
 def GetAssetType(assetjson):
     return assetjson["type"]
 
@@ -122,21 +119,3 @@ def getExrDisplacement(inputPath, res = "2K"):
 
     
     
-def sendToMetabase (importOptions):
-    url = "https://stats.quixel.com/v1/message"
-    data = {
-            "event": "Houdini_ASSET_IMPORTED",
-            "data" : {           
-            "houdini_version" : hou.applicationVersionString(),
-            "renderer" : importOptions["UI"]["ImportOptions"]["Renderer"],
-            "material_type" :importOptions["UI"]["ImportOptions"]["Material"],
-            "usd_enabled" : importOptions["UI"]["ImportOptions"]["EnableUSD"],
-            "UseAtlasSplitter" : importOptions["UI"]["ImportOptions"]["UseAtlasSplitter"],
-            "EnableLods" : importOptions["UI"]["ImportOptions"]["EnableLods"],
-            "ApplyMotion" : importOptions["UI"]["ImportOptions"]["ApplyMotion"],
-            "ConvertToRAT" : importOptions["UI"]["ImportOptions"]["ConvertToRAT"]
-            }
-                                
-        }
-    
-    requests.post(url, data= json.dumps(data))

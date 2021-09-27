@@ -1,16 +1,19 @@
 from PySide2.QtWidgets import QVBoxLayout,QGroupBox,QGridLayout,QComboBox,QLabel,QCheckBox,QWidget,QFrame
 
-from .Utilities.AssetData import *
+from Utilities.OcioSetupManager import OcioSetupManager
+from Utilities.AssetData import *
 import hou
 
-from .MaterialsSetup.MaterialsCreator import MaterialsCreator
+from MaterialsSetup.MaterialsCreator import MaterialsCreator
 
 class UIOptions(QWidget):
     def __init__(self, importOptions, settingsCallback):
         super(UIOptions, self).__init__()
-        self.supportedRenderers = ["Mantra", "Arnold", "Octane", "Redshift", "Renderman"]
-        
+        self.supportedRenderers = ["Mantra", "Arnold", "Octane", "Redshift", "Renderman", "3Delight"]
+
+        self.ocioSetupManager = OcioSetupManager()
         self.importOptions = importOptions
+        self.ocioSetup = self.ocioSetupManager.getOcioSetup()
         self.settingsChanged = settingsCallback
         self.SetupOptionsW()
         
@@ -31,6 +34,7 @@ class UIOptions(QWidget):
         # Main UI Layout
         uiBoxLayout = QVBoxLayout()
         self.uiBox.setLayout(uiBoxLayout)
+        self.uiBox.setContentsMargins(1,1,1,1)
 
 
 
@@ -64,35 +68,37 @@ class UIOptions(QWidget):
 
         self.updateMaterialList(self.renderBoxInput.currentText())
 
+        # OCIO selection option
+        ocioBoxText = QLabel("OCIO :")
+        miscOptionsL.addWidget(ocioBoxText, 2,0)
+
+        self.ocioBoxList = QComboBox()
+        self.ocioBoxList.setToolTip("Select the OCIO config preset you want to use")
+        miscOptionsL.addWidget(self.ocioBoxList, 2,1)
+
+        self.updateOcioList()
+
         # UI Separator
         separatorFrame = QFrame()
         separatorFrame.setFrameShape(QFrame.HLine)
         separatorFrame.setFrameShadow(QFrame.Sunken)        
-        miscOptionsL.addWidget(separatorFrame, 2,0, 1,2)
+        miscOptionsL.addWidget(separatorFrame, 3,0, 1,2)
          
 
         # Misc option : Scattering node
         setupScatteringRadio = QCheckBox("Use Megascans Scattering")
         setupScatteringRadio.setToolTip("Setup Megascans scattering for 3D Assets")
         setupScatteringRadio.setObjectName("UseScattering")
-        miscOptionsL.addWidget(setupScatteringRadio, 3, 0)
+        miscOptionsL.addWidget(setupScatteringRadio, 4, 0)
         setupScatteringRadio.setChecked(self.importOptions["UseScattering"])
         setupScatteringRadio.toggled.connect(lambda state: self.miscOptionChanged(setupScatteringRadio,state))
 
 
-        # Misc option : Use EXR Displacmenet
-        # useExrRadio = QCheckBox("Use EXR Displacement")
-        # useExrRadio.setObjectName("UseExrDisplacement")
-        # miscOptionsL.addWidget(useExrRadio, 3 , 1)
-        # useExrRadio.setChecked(self.importOptions["UseExrDisplacement"])
-        # useExrRadio.toggled.connect(lambda state: self.miscOptionChanged(useExrRadio,state))
-
-
-        # Misc option : Mesh setup for Atlas
+      # Misc option : Mesh setup for Atlas
         useAtlasSplitterRadio = QCheckBox("Use Atlas Splitter")
         useAtlasSplitterRadio.setToolTip("Generate meshes for Atlas")
         useAtlasSplitterRadio.setObjectName("UseAtlasSplitter")
-        miscOptionsL.addWidget(useAtlasSplitterRadio, 4,0)
+        miscOptionsL.addWidget(useAtlasSplitterRadio, 5,0)
         useAtlasSplitterRadio.setChecked(self.importOptions["UseAtlasSplitter"])
         useAtlasSplitterRadio.toggled.connect(lambda state: self.miscOptionChanged(useAtlasSplitterRadio,state))
 
@@ -100,7 +106,7 @@ class UIOptions(QWidget):
         enableLodsRadio = QCheckBox("Enable LODs")
         enableLodsRadio.setToolTip("Import LODs for 3D Assets")
         enableLodsRadio.setObjectName("EnableLods")
-        miscOptionsL.addWidget(enableLodsRadio, 3,1)
+        miscOptionsL.addWidget(enableLodsRadio, 4,1)
         enableLodsRadio.setChecked(self.importOptions["EnableLods"])
         enableLodsRadio.toggled.connect(lambda state: self.miscOptionChanged(enableLodsRadio,state))
 
@@ -108,7 +114,7 @@ class UIOptions(QWidget):
         enableMotionCheck = QCheckBox("Apply Motion (Plants)")
         enableMotionCheck.setToolTip("Apply motion to 3D Plants")
         enableMotionCheck.setObjectName("ApplyMotion")
-        miscOptionsL.addWidget(enableMotionCheck, 4,1)
+        miscOptionsL.addWidget(enableMotionCheck, 5,1)
         enableMotionCheck.setChecked(self.importOptions["ApplyMotion"])
         enableMotionCheck.toggled.connect(lambda state: self.miscOptionChanged(enableMotionCheck,state))
 
@@ -116,7 +122,7 @@ class UIOptions(QWidget):
         ratConvertCheck = QCheckBox("Convert To RAT")
         ratConvertCheck.setToolTip("Convert all textures to .RAT for Mantra and Karma")
         ratConvertCheck.setObjectName("ConvertToRAT")
-        miscOptionsL.addWidget(ratConvertCheck, 5,0)
+        miscOptionsL.addWidget(ratConvertCheck, 6,0)
         ratConvertCheck.setChecked(self.importOptions["ConvertToRAT"])
         ratConvertCheck.toggled.connect(lambda state: self.miscOptionChanged(ratConvertCheck,state))
 
@@ -126,12 +132,13 @@ class UIOptions(QWidget):
         separatorFrame2 = QFrame()
         separatorFrame2.setFrameShape(QFrame.HLine)
         separatorFrame2.setFrameShadow(QFrame.Sunken)        
-        miscOptionsL.addWidget(separatorFrame2, 6,0, 1,2)
+        miscOptionsL.addWidget(separatorFrame2, 7,0, 1,2)
 
         self.usdCheck = QCheckBox("Import Assets on USD Stage")
         self.usdCheck.setToolTip("Import and setup assets in Solaris in Houdini 18.")
         self.usdCheck.setObjectName("EnableUSD")
-        miscOptionsL.addWidget(self.usdCheck, 7,0,1,2)
+        miscOptionsL.addWidget(self.usdCheck, 8,0,1,2)
+        self.uiBox.setContentsMargins(1,1,1,1)
         self.usdCheck.setChecked(self.importOptions["EnableUSD"])
         self.usdCheck.toggled.connect(lambda state: self.miscOptionChanged(self.usdCheck,state))
 
@@ -149,6 +156,7 @@ class UIOptions(QWidget):
         # Connect change signals to slots
         self.renderBoxInput.currentIndexChanged.connect(self.RendererChanged)
         self.materialBoxList.currentIndexChanged.connect(self.MaterialTypeChanged)
+        self.ocioBoxList.currentIndexChanged.connect(self.ocioChanged)
 
 
 
@@ -163,7 +171,7 @@ class UIOptions(QWidget):
         self.uiSettingsChanged()
 
     def updateMaterialList(self, selectedRenderer):
-        supportedMaterials = {"Mantra" : ["Principled Shader", "Triplanar"], "Renderman" : ["Pixar Surface"], "Redshift" : ["Redshift Textures", "Redshift Triplanar"]}
+        supportedMaterials = {"Mantra" : ["Principled Shader", "Triplanar"], "Renderman" : ["Pixar Surface"], "Redshift" : ["Redshift Textures", "Redshift Triplanar"], "3Delight" : ["Principled", "Triplanar"]}
         supportedMaterials = {}
         rendererlist = self.getRendererList()
         for renderer in rendererlist:
@@ -185,6 +193,23 @@ class UIOptions(QWidget):
         self.importOptions["Material"] = self.materialBoxList.itemText(index)
         self.uiSettingsChanged()
 
+
+    def updateOcioList(self):
+        # ocioConfigList = ["default","aces"]
+        ocioConfigList = []
+        for key in self.ocioSetup["OCIO"].keys() :
+            ocioConfigList.append(key)
+        self.ocioBoxList.clear()   
+        self.ocioBoxList.addItems(ocioConfigList)        
+        
+        ocioIndex = self.ocioBoxList.findText(self.importOptions["OCIO"])
+        self.ocioBoxList.setCurrentIndex(ocioIndex)
+
+    def ocioChanged(self, index):
+        self.importOptions["OCIO"] = self.ocioBoxList.itemText(index)
+        self.uiSettingsChanged()
+
+
     def uiSettingsChanged(self):
         self.settingsChanged("ImportOptions", self.importOptions)
 
@@ -200,12 +225,14 @@ class UIOptions(QWidget):
 
             if renderer == "Redshift" and "Redshift_ROP" in hou.ropNodeTypeCategory().nodeTypes():
                 rendererList.append(renderer)
-                
 
             if renderer == "Octane" and "Octane_ROP" in hou.ropNodeTypeCategory().nodeTypes():
                 rendererList.append(renderer)
 
             if renderer == "Renderman" and "ris" in hou.ropNodeTypeCategory().nodeTypes():
+                rendererList.append(renderer)
+
+            if renderer == "3Delight" in hou.ropNodeTypeCategory().nodeTypes():
                 rendererList.append(renderer)
 
         return rendererList

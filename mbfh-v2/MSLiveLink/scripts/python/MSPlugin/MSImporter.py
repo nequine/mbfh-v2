@@ -1,12 +1,12 @@
 from PySide2.QtCore import Slot
 import json
-from .Utilities.AssetData import *
-from .AssetImporters.Import3D import Import3DAsset
-from .AssetImporters.ImportSurface import ImportSurface
-from .AssetImporters.ImportPlant import ImportPlant
+from Utilities.AssetData import *
+from AssetImporters.Import3D import Import3DAsset
+from AssetImporters.ImportSurface import ImportSurface
+from AssetImporters.ImportPlant import ImportPlant
 
-from .Utilities.SettingsManager import SettingsManager
-from .Utilities.AtlasSplitter import AtlasSplitter
+from Utilities.SettingsManager import SettingsManager
+from Utilities.AtlasSplitter import AtlasSplitter
 
 import hou
 
@@ -23,7 +23,6 @@ class MSImporter:
         assetsdata = json.loads(jsondata)    
         importOptions = SettingsManager().getSettings()
         
-        sendToMetabase(importOptions)
 
         for assetData in assetsdata:
             # print(json.dumps(assetData))     

@@ -13,13 +13,6 @@
         <label>Megascans Plugin</label>
         <scriptCode><![CDATA[
 import MSPlugin.MainWindow as msMainWindow
-try:
-    # Python 3.7+
-    from importlib import reload
-except:
-    # Python 2.7
-    pass
-reload(msMainWindow)
 msMainWindow.initializeWindow()]]></scriptCode>
       </scriptItem>
 	  
@@ -27,7 +20,7 @@ msMainWindow.initializeWindow()]]></scriptCode>
 		
 	<scriptItem id="documentation">
 		<label>Documentation</label>
-		<scriptCode><![CDATA[__import__('webbrowser').open('https://docs.google.com/document/d/1NQo0ebfaM9b5zC59vc1U-XB7bU7ChDouzYqq9lBfLZo/edit?usp=sharing')]]></scriptCode>
+		<scriptCode><![CDATA[__import__('webbrowser').open('https://drive.google.com/open?id=1hAuh-9_g37htwBYcUd3pz8hL9B6AQTgL2h3F9GPW7y4')]]></scriptCode>
 	  </scriptItem>
 
 		</subMenu>

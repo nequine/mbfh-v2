@@ -5,11 +5,11 @@ from ..Utilities.MegascansScatter import MegascansScatter
 from ..Utilities.USDVariant import *
 import os
 
-from six import with_metaclass
 
 import hou
 
-class ImportPlantUSD(with_metaclass(Singleton)):
+class ImportPlantUSD:
+    __metaclass__ = Singleton
 
     def __init__(self):
         pass
@@ -33,19 +33,21 @@ class ImportPlantUSD(with_metaclass(Singleton)):
             attribDelete = transformNode.createOutputNode("attribdelete")
             attribDelete.parm("ptdel").set("fbx_*")
             attribDelete.parm("vtxdel").set("Cd")
+            packNode = attribDelete.createOutputNode("pack")
 
-            outputNullNode = attribDelete.createOutputNode("null", variationData["name"].split(".")[0])
+            outputNullNode = packNode.createOutputNode("null", variationData["name"].split(".")[0])
             allVariations.append(outputNullNode)
             outputNullNode.setDisplayFlag(True)
 
         # fileImportNode.setRenderFlag(False)
-        geometryContainer.moveToGoodPosition()
+        geometryContainer.layoutChildren()
 
         return allVariations
         
     
 
-class ImportPlant(with_metaclass(Singleton)):
+class ImportPlant:
+    __metaclass__ = Singleton
 
     def __init__(self):
         pass
@@ -75,9 +77,11 @@ class ImportPlant(with_metaclass(Singleton)):
 
             elif importOptions["UI"]["ImportOptions"]["Renderer"] == "Arnold":
                 geometryContainer.parm("ar_disp_height").set(0.008)
+
+            elif importOptions["UI"]["ImportOptions"]["Renderer"] == "3Delight":
+                geometryContainer.parm("shop_materialpath").set(assetMaterialPath)
             
-            
-            varActiveLod = self.createGeometrySetup(plantVar["path"],assetMaterialPath, geometryContainer.path(), outputNullName, importOptions["UI"]["ImportOptions"]["ApplyMotion"])
+            varActiveLod = self.createGeometrySetup(plantVar["path"],assetMaterialPath, geometryContainer.path(), importOptions, outputNullName, importOptions["UI"]["ImportOptions"]["ApplyMotion"])
             plantsActiveOutput.append(varActiveLod)
             if importOptions["UI"]["ImportOptions"]["EnableLods"] :
                 lodList = self.getPlantLodList(assetData, plantVar["name"].split("_")[0])
@@ -96,7 +100,7 @@ class ImportPlant(with_metaclass(Singleton)):
                     
                     lodOutputName = importParams["assetName"] + "_" + lodData["name"].split(".")[0]
                     
-                    lodOutput = self.createGeometrySetup(lodData["path"], assetMaterialPath, geometryContainer.path(), lodOutputName)
+                    lodOutput = self.createGeometrySetup(lodData["path"], assetMaterialPath, geometryContainer.path(), importOptions, lodOutputName)
                     if switchNode is not None: switchNode.setNextInput(lodOutput)
 
                 if selectedLod is not None:
@@ -106,7 +110,7 @@ class ImportPlant(with_metaclass(Singleton)):
         
 
 
-        hou.node(importParams["assetPath"]).moveToGoodPosition()
+        hou.node(importParams["assetPath"]).layoutChildren()
         if importOptions["UI"]["ImportOptions"]["UseScattering"]:
             if importOptions["UI"]["ImportOptions"]["EnableLods"] :
                 assetPaths = [asset.path() for asset in plantsSelectorOutput ]
@@ -116,7 +120,7 @@ class ImportPlant(with_metaclass(Singleton)):
             MegascansScatter().createScatter(assetPaths,None, importParams["assetPath"], importOptions)
 
 
-    def createGeometrySetup(self, meshSourcePath, materialPath, targetPath, outputName= "Out", applyMotion = False):
+    def createGeometrySetup(self, meshSourcePath, materialPath, targetPath, importOptions, outputName= "Out", applyMotion = False):
         uniformScale = 0.01
         fileextension = os.path.splitext(meshSourcePath)[1]
 
@@ -131,17 +135,24 @@ class ImportPlant(with_metaclass(Singleton)):
         transformNode = fileImportNode.createOutputNode("xform")
         transformNode.parm("scale").set(uniformScale)
 
-        attribDelete = transformNode
+        # attribDelete = transformNode
+
         if fileextension == ".fbx":
             attribDelete = transformNode.createOutputNode("attribdelete")
             attribDelete.parm("ptdel").set("fbx_*")
             attribDelete.parm("vtxdel").set("Cd")
+            packNode = attribDelete.createOutputNode("pack")
+            if importOptions["UI"]["ImportOptions"]["Renderer"] == "3Delight":
+                materialNode = packNode
+            else :
+                materialNode = packNode.createOutputNode("material")
+        else :
+            if importOptions["UI"]["ImportOptions"]["Renderer"] == "3Delight":
+                materialNode = transformNode
+            else :
+                materialNode = transformNode.createOutputNode("material")
+                materialNode.parm("shop_materialpath1").set(materialPath)
 
-        # attribDelete = transformNode.createOutputNode("attribdelete")
-        # attribDelete.parm("ptdel").set("fbx_*")
-        # attribDelete.parm("vtxdel").set("Cd")
-        materialNode = attribDelete.createOutputNode("material")
-        materialNode.parm("shop_materialpath1").set(materialPath)
         if applyMotion == True:
             materialNode = materialNode.createOutputNode("quixel_simple_motion")
         outputNullNode = materialNode.createOutputNode("null", outputName)
@@ -149,7 +160,7 @@ class ImportPlant(with_metaclass(Singleton)):
         outputNullNode.setDisplayFlag(True)
         outputNullNode.setRenderFlag(True)
         # fileImportNode.setRenderFlag(False)
-        hou.node(targetPath).moveToGoodPosition()
+        hou.node(targetPath).layoutChildren()
         # outputNullNode.setRenderFlag(False)
         return outputNullNode
 

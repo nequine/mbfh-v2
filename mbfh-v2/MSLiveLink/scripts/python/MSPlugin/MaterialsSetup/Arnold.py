@@ -4,11 +4,10 @@ from ..Utilities.AssetData import *
 
 import hou
 
-from six import with_metaclass
-
 # "ar_disp_height"
 
-class ArnoldStandardSurfaceFactory(with_metaclass(Singleton)):
+class ArnoldStandardSurfaceFactory:
+    __metaclass__ = Singleton
     def __init_(self):
         pass
     
@@ -58,7 +57,6 @@ class ArnoldStandardSurfaceFactory(with_metaclass(Singleton)):
 
         }
         materialPath = importParams["materialPath"]
-        # redshiftMatBuilder = hou.node(materialPath).createNode("redshift_vopnet", importParams["assetName"])
         materialContainer = hou.node(materialPath)        
         shaderNode = materialContainer.createNode("arnold::standard_surface")
         shaderNode.parm("specular").set(0)
@@ -132,7 +130,8 @@ class ArnoldStandardSurfaceFactory(with_metaclass(Singleton)):
 
 
 
-class ArnoldTriplanarSurfaceFactory(with_metaclass(Singleton)):
+class ArnoldTriplanarSurfaceFactory:
+    __metaclass__ = Singleton
     def __init_(self):
         pass
     

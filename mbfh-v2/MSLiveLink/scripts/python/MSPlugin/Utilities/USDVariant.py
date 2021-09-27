@@ -130,4 +130,4 @@ def usdVariantSetup(importedAssets,assetData,importOptions, importParams):
 
     outputNode = variantSet.createOutputNode("null", importParams["assetName"])
     outputNode.setDisplayFlag(True)
-    hou.node(importParams["usdAssetPath"]).moveToGoodPosition()
+    hou.node(importParams["usdAssetPath"]).layoutChildren()

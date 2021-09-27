@@ -4,12 +4,11 @@ from ..Utilities.AssetData import *
 
 import hou
 
-from six import with_metaclass
-
 # RS_Texture: Gamma Override
 # RS_Bump: Input Map Type (ie. Tangent Space Normals)
 
-class OctaneUniveralMaterialFactory(with_metaclass(Singleton)):
+class OctaneUniveralMaterialFactory:
+    __metaclass__ = Singleton
     def __init_(self):
         pass
     
@@ -113,7 +112,8 @@ class OctaneUniveralMaterialFactory(with_metaclass(Singleton)):
 
 
 
-class OctaneTriplanarUniversalFactory(with_metaclass(Singleton)):
+class OctaneTriplanarUniversalFactory:
+    __metaclass__ = Singleton
     def __init_(self):
         pass
     

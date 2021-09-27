@@ -1,6 +1,7 @@
 
 from ..Utilities.SingletonBase import Singleton
 from .MaterialsCreator import MaterialsCreator
+from ..Utilities.OcioSetupManager import OcioSetupManager
 
 import os
 import platform
@@ -33,7 +34,7 @@ def convertToTex(inputPath):
         texFile = filepath + ".tex"        
         if os.path.isfile(texFile):
             return texFile
-        conversionArgs = converterPath + " " + "-mode periodic" + " " + '"' + inputPath + '"' + " " + '"' + texFile+'"'        
+        conversionArgs = converterPath+ " " + '"'+inputPath+'"'+ " " +'"'+texFile+'"'        
         converting = subprocess.Popen(conversionArgs, stdout=subprocess.PIPE)
         out, err = converting.communicate()
         if err:            
@@ -56,6 +57,19 @@ class RendermanPixarSurface:
 
 
         self.nonLinearMaps = ["albedo", "specular", "translucency"]
+
+        self.ocioSetupManager = OcioSetupManager()
+        self.ocioSetup = self.ocioSetupManager.getOcioSetup()
+
+        self.ocio_settings = {
+            "ocio" : {
+                "texture" : ["albedo","diffuse","specular","translucency"],
+                "texture_lin" : [],
+                "texture_raw" : ["roughness","normal","displacement","metalness","opacity","bump"],
+            },
+            "ocio_param" : "filename_colorspace"
+
+        }
 
         self.paramMapping ={
             "defaultParams" :{
@@ -112,14 +126,30 @@ class RendermanPixarSurface:
             }
 
         } #parameter mapping from texture type, output name and input name
-        materialNode = hou.node(importParams["materialPath"]).createNode("pxrsurface::22", importParams["assetName"])
+        materialNode = hou.node(importParams["materialPath"]).createNode("pxrsurface::3.0", importParams["assetName"])
 
         for defaultParam in self.paramMapping["defaultParams"].keys():
             materialNode.parm(defaultParam).set(self.paramMapping["defaultParams"][defaultParam])
 
+        #OCIO setup 
+        ocioUiSelection = importOptions["UI"]["ImportOptions"]["OCIO"]
+
+        if ocioUiSelection in self.ocioSetup["OCIO"]:
+            ocioSelection = ocioUiSelection
+            ocioSetupDict = self.ocioSetup["OCIO"][ocioSelection]
+        else : 
+            ocioSelection = None
+                
+        if ocioSelection == None :
+            print("WARNING : Ocio selection doesn't match the OcioSetup.json config.")
+
+        ocio_param = self.ocio_settings["ocio_param"]
+
+
+
         outputNode = materialNode
         if assetData["type"] == "surface" :
-            manifoldNode = hou.node(importParams["materialPath"]).createNode("pxrmanifold2d::22")
+            manifoldNode = hou.node(importParams["materialPath"]).createNode("pxrmanifold2d::24")
 
         for textureData in assetData["components"]:
             if textureData["type"] == "metalness":
@@ -128,45 +158,65 @@ class RendermanPixarSurface:
                 materialNode.parm("specularExtinctionCoeffb").set(3)
 
             if textureData["type"] not in self.paramMapping["mapConnections"].keys(): continue
-            textureNode = hou.node(importParams["materialPath"]).createNode("pxrtexture::22", assetData["id"] + "_" + textureData["type"])
+            textureNode = hou.node(importParams["materialPath"]).createNode("pxrtexture::3.0", assetData["id"] + "_" + textureData["type"])
             if textureData["type"] in self.nonLinearMaps: textureNode.parm("linearize").set(1)
-            texFile = convertToTex(textureData["path"])
+
+
+            if ocioSelection != None :
+                if textureData["type"] in self.ocio_settings["ocio"]["texture"] :
+                    filename, file_extension = os.path.splitext(textureData["path"])
+                    if file_extension == ".exr" :
+                        ocio_param_value = ocioSetupDict["texture_lin"]
+                    else : 
+                        ocio_param_value = ocioSetupDict["texture"]
+                elif textureData["type"] in self.ocio_settings["ocio"]["texture_lin"] :
+                    ocio_param_value = ocioSetupDict["texture_lin"]
+                elif textureData["type"] in self.ocio_settings["ocio"]["texture_raw"] :
+                    ocio_param_value = ocioSetupDict["texture_raw"]
+            
+            textureNode.parm(ocio_param).set(ocio_param_value)
+
+            texFile = textureData["path"]
+            # texFile = convertToTex(textureData["path"])
             texFile = texFile.replace("\\", "/")
             textureNode.parm("filename").set(texFile)
             textureParams = self.paramMapping["mapConnections"][textureData["type"]]
             if textureData["type"] == "normal":                
-                normalNode = hou.node(importParams["materialPath"]).createNode("pxrnormalmap::22", assetData["id"] + "_pxrNormal")
+                normalNode = hou.node(importParams["materialPath"]).createNode("pxrnormalmap::3.0", assetData["id"] + "_pxrNormal")
                 normalNode.setNamedInput("inputRGB", textureNode, "resultRGB")
                 materialNode.setNamedInput(textureParams["input"], normalNode, textureParams["output"])
 
             elif textureData["type"] == "bump":
-                bumpNode = hou.node(importParams["materialPath"]).createNode("pxrbump::22", assetData["id"] + "_pxrBump")
+                bumpNode = hou.node(importParams["materialPath"]).createNode("pxrbump::3.0", assetData["id"] + "_pxrBump")
                 bumpNode.setNamedInput("inputBump", textureNode, "resultR")
                 materialNode.setNamedInput(textureParams["input"], bumpNode, textureParams["output"])
 
                 
             elif textureData["type"] == "displacement":
                 collectionNode = hou.node(importParams["materialPath"]).createNode("collect", importParams["assetName"] + "_displacement")
-                dispNode = hou.node(importParams["materialPath"]).createNode("pxrdisplace::22", assetData["id"]+ "_pxrDisplace")
-                # dispNode.setNamedInput("dispAmount", textureNode, "resultR")
-                dispTransformNode = hou.node(importParams["materialPath"]).createNode("pxrdisptransform::22", assetData["id"]+ "_pxrDispTransform")
-                dispTransformNode.setNamedInput("dispScalar", textureNode, "resultR")
-                dispNode.setNamedInput("dispScalar", dispTransformNode, "resultF")
-                dispTransformNode.parm("dispRemapMode").set(2)
+                dispNode = hou.node(importParams["materialPath"]).createNode("pxrdisplace::3.0", assetData["id"]+ "_pxrDisplace")
+                dispNode.setNamedInput("dispAmount", textureNode, "resultR")                
+                # True value to be determined from the meta json
+
                 if assetData["type"] == "surface" or assetData["type"] == "atlas":
                     dispValue = "0.15"
                     for assetMeta in assetData["meta"]:
                         if assetMeta["key"] == "height":
-                            dispValue = assetMeta["value"].split(" ")[0]
+                            dispValue = assetMeta["value"].split(" ")[0]                
                     dispNode.parm("dispScalar").set(dispValue)
                 else : dispNode.parm("dispScalar").set("0.01")
-                collectionNode.setNamedInput(textureParams["input"], dispNode, textureParams["output"])
-                collectionNode.setNamedInput("shader2", materialNode, "bxdf_out")
+
+                # if importOptions["UI"]["ImportOptions"]["EnableUSD"] :
+                #     dispNode.parm("dispScalar").set("0")
+                collectionNode.setInput(0, materialNode)
+                collectionNode.setInput(1, dispNode)
+                # collectionNode.setNamedInput("shader1", dispNode, "displace")
+                # collectionNode.setNamedInput("shader2", materialNode, "bxdf_out")
                 outputNode = collectionNode
 
                     
             elif textureData["type"] == "roughness":
-                roughnessConverter = hou.node(importParams["materialPath"]).createNode("pxrtofloat::22")
+                roughnessConverter = hou.node(importParams["materialPath"]).createNode("pxrtofloat::3.0")
                 roughnessConverter.setNamedInput("input", textureNode, "resultRGB")
                 materialNode.setNamedInput(textureParams["input"], roughnessConverter, textureParams["output"])
 
@@ -195,6 +245,18 @@ class RendermanTriplanarSurface:
         if rendermanPath is None:            
             return None
 
+        self.ocioSetupManager = OcioSetupManager()
+        self.ocioSetup = self.ocioSetupManager.getOcioSetup()
+        self.ocio_settings = {
+            "ocio" : {
+                "texture" : ["albedo","diffuse","specular","translucency"],
+                "texture_lin" : [],
+                "texture_raw" : ["roughness","normal","displacement","metalness","opacity","bump"],
+            },
+            "ocio_param" : "filename0_colorspace"
+
+        }
+
 
         self.nonLinearMaps = ["albedo", "specular", "translucency"]
         self.paramMapping ={
@@ -252,14 +314,30 @@ class RendermanTriplanarSurface:
             }
 
         } #parameter mapping from texture type, output name and input name
-        materialNode = hou.node(importParams["materialPath"]).createNode("pxrsurface::22", importParams["assetName"])
+        materialNode = hou.node(importParams["materialPath"]).createNode("pxrsurface::3.0", importParams["assetName"])
+
+
+        #OCIO setup 
+        ocioUiSelection = importOptions["UI"]["ImportOptions"]["OCIO"]
+
+        if ocioUiSelection in self.ocioSetup["OCIO"]:
+            ocioSelection = ocioUiSelection
+            ocioSetupDict = self.ocioSetup["OCIO"][ocioSelection]
+        else : 
+            ocioSelection = None
+                
+        if ocioSelection == None :
+            print("WARNING : Ocio selection doesn't match the OcioSetup.json config.")
+
+        ocio_param = self.ocio_settings["ocio_param"]
+        #OCIO setup END
 
         for defaultParam in self.paramMapping["defaultParams"].keys():
             materialNode.parm(defaultParam).set(self.paramMapping["defaultParams"][defaultParam])
 
         outputNode = materialNode
         
-        roundCubeNode = hou.node(importParams["materialPath"]).createNode("pxrroundcube::22")
+        roundCubeNode = hou.node(importParams["materialPath"]).createNode("pxrroundcube::3.0")
 
         for textureData in assetData["components"]:
             if textureData["type"] == "metalness":
@@ -268,9 +346,26 @@ class RendermanTriplanarSurface:
                 materialNode.parm("specularExtinctionCoeffb").set(3)
 
             
-            textureNode = hou.node(importParams["materialPath"]).createNode("pxrmultitexture::22", assetData["id"] + "_" + textureData["type"])
-            if textureData["type"] in self.nonLinearMaps: textureNode.parm("linearize").set(1)
-            texFile = convertToTex(textureData["path"])
+            textureNode = hou.node(importParams["materialPath"]).createNode("pxrmultitexture::3.0", assetData["id"] + "_" + textureData["type"])
+
+            if ocioSelection != None :
+                if textureData["type"] in self.ocio_settings["ocio"]["texture"] :
+                    filename, file_extension = os.path.splitext(textureData["path"])
+                    if file_extension == ".exr" :
+                        ocio_param_value = ocioSetupDict["texture_lin"]
+                    else : 
+                        ocio_param_value = ocioSetupDict["texture"]
+                elif textureData["type"] in self.ocio_settings["ocio"]["texture_lin"] :
+                    ocio_param_value = ocioSetupDict["texture_lin"]
+                elif textureData["type"] in self.ocio_settings["ocio"]["texture_raw"] :
+                    ocio_param_value = ocioSetupDict["texture_raw"]
+            
+            textureNode.parm(ocio_param).set(ocio_param_value)
+
+            texFile = textureData["path"]
+
+            # if textureData["type"] in self.nonLinearMaps: textureNode.parm("linearize").set(1)
+            # texFile = convertToTex(textureData["path"])
             texFile = texFile.replace("\\", "/")
             textureNode.parm("filename0").set(texFile)
 
@@ -278,18 +373,18 @@ class RendermanTriplanarSurface:
 
             textureParams = self.paramMapping["mapConnections"][textureData["type"]]
             if textureData["type"] == "normal":                
-                normalNode = hou.node(importParams["materialPath"]).createNode("pxrnormalmap::22", assetData["id"] + "_pxrNormal")
+                normalNode = hou.node(importParams["materialPath"]).createNode("pxrnormalmap::3.0", assetData["id"] + "_pxrNormal")
                 normalNode.setNamedInput("inputRGB", textureNode, "resultRGB")
                 materialNode.setNamedInput(textureParams["input"], normalNode, textureParams["output"])
 
             elif textureData["type"] == "bump":
-                bumpNode = hou.node(importParams["materialPath"]).createNode("pxrbump::22", assetData["id"] + "_pxrBump")
+                bumpNode = hou.node(importParams["materialPath"]).createNode("pxrbump::3.0", assetData["id"] + "_pxrBump")
                 bumpNode.setNamedInput("inputBump", textureNode, "resultR")
                 materialNode.setNamedInput(textureParams["input"], bumpNode, textureParams["output"])
 
             elif textureData["type"] == "displacement":
                 collectionNode = hou.node(importParams["materialPath"]).createNode("collect", importParams["assetName"] + "_displacement")
-                dispNode = hou.node(importParams["materialPath"]).createNode("pxrdisplace::22", assetData["id"]+ "_pxrDisplace")
+                dispNode = hou.node(importParams["materialPath"]).createNode("pxrdisplace::3.0", assetData["id"]+ "_pxrDisplace")
                 dispNode.setNamedInput("dispAmount", textureNode, "resultR")                
                 # True value to be determined from the meta json
 
@@ -303,14 +398,15 @@ class RendermanTriplanarSurface:
 
                 # if importOptions["UI"]["ImportOptions"]["EnableUSD"] :
                 #     dispNode.parm("dispScalar").set("0")
-                
-                collectionNode.setNamedInput(textureParams["input"], dispNode, textureParams["output"])
-                collectionNode.setNamedInput("shader2", materialNode, "bxdf_out")
+                collectionNode.setInput(0, materialNode)
+                collectionNode.setInput(1, dispNode)
+                # collectionNode.setNamedInput(textureParams["input"], dispNode, textureParams["output"])
+                # collectionNode.setNamedInput("shader2", materialNode, "bxdf_out")
                 outputNode = collectionNode
 
                     
             elif textureData["type"] == "roughness":
-                roughnessConverter = hou.node(importParams["materialPath"]).createNode("pxrtofloat::22")
+                roughnessConverter = hou.node(importParams["materialPath"]).createNode("pxrtofloat::3.0")
                 roughnessConverter.setNamedInput("input", textureNode, "resultRGB")
                 materialNode.setNamedInput(textureParams["input"], roughnessConverter, textureParams["output"])
 

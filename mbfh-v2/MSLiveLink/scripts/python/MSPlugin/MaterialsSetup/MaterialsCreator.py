@@ -1,7 +1,7 @@
 from ..Utilities.SingletonBase import Singleton
-from six import with_metaclass
 
-class MaterialsCreator(with_metaclass(Singleton)):
+class MaterialsCreator :
+    __metaclass__ = Singleton
     def __init__(self):
         self.materialMap = {}
 

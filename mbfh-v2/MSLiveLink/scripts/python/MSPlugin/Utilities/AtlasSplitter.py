@@ -1,9 +1,8 @@
 import hou
 from .SingletonBase import Singleton
 
-from six import with_metaclass
-
-class AtlasSplitter(with_metaclass(Singleton)):
+class AtlasSplitter:
+    __metaclass__ = Singleton
     def __init__(self):
         pass
 
@@ -37,7 +36,7 @@ class AtlasSplitter(with_metaclass(Singleton)):
             atlasPiece.setDisplayFlag(True)
             atlasPiece.setRenderFlag(True)
             atlasMeshOutputs.append(atlasPiece)
-        geometryContainer.moveToGoodPosition()
-        hou.node(importParams["assetPath"]).moveToGoodPosition()
+        geometryContainer.layoutChildren()
+        hou.node(importParams["assetPath"]).layoutChildren() 
         return atlasMeshOutputs
 

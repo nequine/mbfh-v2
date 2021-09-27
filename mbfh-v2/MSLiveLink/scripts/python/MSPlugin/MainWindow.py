@@ -4,17 +4,16 @@ from PySide2.QtWidgets import QLabel, QWidget,QApplication, QVBoxLayout,QMainWin
 
 import hou
 
-
-from .OptionsUI import UIOptions
-from .USDUI import USDOptions
-from .SocketListener import QLiveLinkMonitor
-from .MSImporter import MSImporter
-from .Utilities.AssetData import *
-from .Utilities.SettingsManager import SettingsManager
+from OptionsUI import UIOptions
+from USDUI import USDOptions
+from SocketListener import QLiveLinkMonitor
+from MSImporter import MSImporter
+from Utilities.AssetData import *
+from Utilities.SettingsManager import SettingsManager
 
 def GetHostApp():
     try:
-        mainWindow =hou.ui.mainQtWindow()
+        mainWindow =QApplication.activeWindow()
         while True:
             lastWin = mainWindow.parent()
             if lastWin:

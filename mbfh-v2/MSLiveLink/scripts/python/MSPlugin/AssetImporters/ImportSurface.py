@@ -5,9 +5,8 @@ from ..MaterialsSetup.MaterialsCreator import MaterialsCreator
 from ..MaterialsSetup import *
 import hou
 
-from six import with_metaclass
-
-class ImportSurface(with_metaclass(Singleton)):
+class ImportSurface:
+    __metaclass__ = Singleton
 
     def __init_(self):
         pass
@@ -35,10 +34,14 @@ class ImportSurface(with_metaclass(Singleton)):
                 rendermanContainer = hou.node(importParams["materialPath"]).createNode("pxrmaterialbuilder", node_name=importParams["assetName"], run_init_scripts=False)
                 importParams["materialPath"] = rendermanContainer.path()
 
+            elif importOptions["UI"]["ImportOptions"]["Renderer"] == "3Delight":
+                delightContainer = hou.node(importParams["materialPath"]).createNode("dlMaterialBuilder", node_name=importParams["assetName"], run_init_scripts=False)
+                importParams["materialPath"] = delightContainer.path()
+
             importedSurface = materialsCreator.createMaterial(importOptions["UI"]["ImportOptions"]["Renderer"], importOptions["UI"]["ImportOptions"]["Material"], assetData, importParams, importOptions)
             
-            hou.node(importParams["materialPath"]).moveToGoodPosition()
-            hou.node("/mat").moveToGoodPosition()
+            hou.node(importParams["materialPath"]).layoutChildren()
+            hou.node("/mat").layoutChildren()
             importedSurface.setSelected(True)
             if importOptions["UI"]["ImportOptions"]["Renderer"] == "Arnold":
                 return arnoldContainer
@@ -51,6 +54,9 @@ class ImportSurface(with_metaclass(Singleton)):
 
             if importOptions["UI"]["ImportOptions"]["Renderer"] == "Renderman":
                 return rendermanContainer
+
+            if importOptions["UI"]["ImportOptions"]["Renderer"] == "3Delight":
+                return delightContainer
 
             return importedSurface
         
@@ -88,8 +94,8 @@ class ImportSurface(with_metaclass(Singleton)):
                 usdMaterialContainer.parm("matnode1").set(importedSurface.name())
                 usdMaterialContainer.parm("matpath1").set(usdMaterialContainer.parm("containerpath").eval() + importedSurface.name())
 
-            hou.node(importParams["materialPath"]).moveToGoodPosition()
-            hou.node("/mat").moveToGoodPosition()
+            hou.node(importParams["materialPath"]).layoutChildren()
+            hou.node("/mat").layoutChildren()
             importedSurface.setSelected(True)
 
             return importedSurface
