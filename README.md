@@ -16,15 +16,15 @@ Installation instructions :
 Once you downloaded and unzipped the plugin, you need to specify to houdini where to find the plugin. 
 Go to your houdini packages folder location, the path should looks like something like that :
 
-"C:\Users\YOUR USER NAME\Documents\houdiniXX.X\packages"
+>"C:\Users\YOUR USER NAME\Documents\houdiniXX.X\packages"
 
 If you already installed the megascans bridge plugin for houdini, you should already find a MegascanPlugin.json, you can open it and modify the path to point where mbfh-v2 is located, for exemple :
 
-"E:\\git\\mbfh-v2\\mbfh-v2\\MSLiveLink"
+>"E:\\git\\mbfh-v2\\mbfh-v2\\MSLiveLink"
 
 If you didn't install the megascan bridge plugin already, you have to create a text file first, then rename it "MegascanPlugin.json". Once you've renamed it, you can edit it and add :
-`
-{
-  "path": "C:\\path\\to\\your\\plugin"
-}
-`
+
+>{
+>  "path": "C:\\path\\to\\your\\plugin"
+>}
+
