@@ -25,5 +25,5 @@ If you already installed the megascans bridge plugin for houdini, you should alr
 If you didn't install the megascan bridge plugin already, you have to create a text file first, then rename it "MegascanPlugin.json". Once you've renamed it, you can edit it and add :
 
 {
-  "path": "C:\\path\\to\\your\\plugin"
+  "path": "C:\\\\path\\to\\your\\plugin"
 }
