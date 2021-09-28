@@ -11,8 +11,7 @@ The creation of this fork has been motivated by two things :
 At the time I started to work on this fork, there were also multiple issues that were plagging the plugin for houdini and was very frustrating ( I believe they fixed most of them in the 4.5, kudos to them). I wanted to share with the community a plugin free of those issues and working as intended. 
 
 
-This is **WIP**
-I am working on this on my free time. Don't hesitate to post issues or feature requests and I will add them if I can find the time to do it.
+This is **WIP**. I am working on this on my free time. Don't hesitate to post issues or feature requests and I will add them if I can find the time to do it.
 
 
 **Installation instructions :**
