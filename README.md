@@ -33,7 +33,7 @@ If you didn't install the megascan bridge plugin already, you have to create a t
 
 
 
-**What's new ? **
+**What's new ?**
 
 What I added :
 - support of 3delight|NSI,
