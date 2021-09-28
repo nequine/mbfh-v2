@@ -112,3 +112,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+mbfh-v2/MSLiveLink/scripts/python/MSPlugin/OcioSetup.json

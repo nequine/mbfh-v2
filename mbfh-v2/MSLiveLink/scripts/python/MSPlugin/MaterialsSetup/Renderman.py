@@ -194,8 +194,11 @@ class RendermanPixarSurface:
                 
             elif textureData["type"] == "displacement":
                 collectionNode = hou.node(importParams["materialPath"]).createNode("collect", importParams["assetName"] + "_displacement")
+                dispTransform = hou.node(importParams["materialPath"]).createNode("pxrdisptransform::3.0",importParams["assetName"] + "_dispTransform")
+                dispTransform.parm("dispRemapMode").set(2)
                 dispNode = hou.node(importParams["materialPath"]).createNode("pxrdisplace::3.0", assetData["id"]+ "_pxrDisplace")
-                dispNode.setNamedInput("dispAmount", textureNode, "resultR")                
+                dispNode.setNamedInput("dispAmount", dispTransform, "resultF")
+                dispTransform.setNamedInput("dispScalar", textureNode, "resultR")               
                 # True value to be determined from the meta json
 
                 if assetData["type"] == "surface" or assetData["type"] == "atlas":
@@ -384,15 +387,18 @@ class RendermanTriplanarSurface:
 
             elif textureData["type"] == "displacement":
                 collectionNode = hou.node(importParams["materialPath"]).createNode("collect", importParams["assetName"] + "_displacement")
+                dispTransform = hou.node(importParams["materialPath"]).createNode("pxrdisptransform::3.0",importParams["assetName"] + "_dispTransform")
+                dispTransform.parm("dispRemapMode").set(2)
                 dispNode = hou.node(importParams["materialPath"]).createNode("pxrdisplace::3.0", assetData["id"]+ "_pxrDisplace")
-                dispNode.setNamedInput("dispAmount", textureNode, "resultR")                
+                dispNode.setNamedInput("dispAmount", dispTransform, "resultF")
+                dispTransform.setNamedInput("dispScalar", textureNode, "resultR")                  
                 # True value to be determined from the meta json
 
                 if assetData["type"] == "surface" or assetData["type"] == "atlas":
                     dispValue = "0.15"
                     for assetMeta in assetData["meta"]:
                         if assetMeta["key"] == "height":
-                            dispValue = assetMeta["value"].split(" ")[0]                
+                            dispValue = assetMeta["value"].split(" ")[0]
                     dispNode.parm("dispScalar").set(dispValue)
                 else : dispNode.parm("dispScalar").set("0.01")
 

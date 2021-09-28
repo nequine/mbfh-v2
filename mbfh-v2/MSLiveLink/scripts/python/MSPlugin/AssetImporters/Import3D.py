@@ -450,7 +450,7 @@ class Import3DAsset:
         
         if importOptions["UI"]["ImportOptions"]["Renderer"] == "3delight":
             materialNode = transformNode
-            
+
         else :
             materialNode = attribDelete.createOutputNode("material")
             materialNode.parm("shop_materialpath1").set(materialPath)
